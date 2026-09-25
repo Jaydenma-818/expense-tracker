@@ -9,18 +9,24 @@ try {
 }
 
 const REQUIRED_ENV_VARS = ['TURSO_DATABASE_URL', 'TURSO_AUTH_TOKEN', 'VITE_FIREBASE_PROJECT_ID']
-const missingEnvVars = REQUIRED_ENV_VARS.filter((key) => !process.env[key])
-if (missingEnvVars.length > 0) {
-  throw new Error(`Missing required environment variable(s): ${missingEnvVars.join(', ')}`)
-}
 
-const projectId = process.env.VITE_FIREBASE_PROJECT_ID
+// Surfaced to the client: a misconfigured deployment is otherwise invisible
+// without reading platform logs.
+class ConfigError extends Error {}
+
+function requireEnv() {
+  const missing = REQUIRED_ENV_VARS.filter((key) => !process.env[key])
+  if (missing.length > 0) {
+    throw new ConfigError(`Missing required environment variable(s): ${missing.join(', ')}`)
+  }
+}
 
 const firebaseJWKS = createRemoteJWKSet(
   new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com')
 )
 
 async function verifyFirebaseIdToken(token) {
+  const projectId = process.env.VITE_FIREBASE_PROJECT_ID
   const { payload } = await jwtVerify(token, firebaseJWKS, {
     issuer: `https://securetoken.google.com/${projectId}`,
     audience: projectId,
@@ -28,13 +34,20 @@ async function verifyFirebaseIdToken(token) {
   return payload
 }
 
-const db = createClient({
-  url: process.env.TURSO_DATABASE_URL,
-  authToken: process.env.TURSO_AUTH_TOKEN,
-})
+let dbInstance = null
+function db() {
+  if (!dbInstance) {
+    requireEnv()
+    dbInstance = createClient({
+      url: process.env.TURSO_DATABASE_URL,
+      authToken: process.env.TURSO_AUTH_TOKEN,
+    })
+  }
+  return dbInstance
+}
 
 async function initSchema() {
-  await db.execute(`
+  await db().execute(`
     CREATE TABLE IF NOT EXISTS expenses (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       amount REAL NOT NULL,
@@ -45,9 +58,9 @@ async function initSchema() {
     )
   `)
 
-  const columns = (await db.execute('PRAGMA table_info(expenses)')).rows
+  const columns = (await db().execute('PRAGMA table_info(expenses)')).rows
   if (!columns.some((col) => col.name === 'user_id')) {
-    await db.execute('ALTER TABLE expenses ADD COLUMN user_id TEXT')
+    await db().execute('ALTER TABLE expenses ADD COLUMN user_id TEXT')
   }
 }
 
@@ -62,6 +75,13 @@ function ensureSchema() {
 
 const app = express()
 app.use(express.json())
+
+app.get('/api/health', (req, res) => {
+  res.json({
+    ok: true,
+    missingEnvVars: REQUIRED_ENV_VARS.filter((key) => !process.env[key]),
+  })
+})
 
 app.use('/api', async (req, res, next) => {
   await ensureSchema()
@@ -88,7 +108,7 @@ app.use('/api', async (req, res, next) => {
 })
 
 app.get('/api/expenses', async (req, res) => {
-  const result = await db.execute({
+  const result = await db().execute({
     sql: 'SELECT * FROM expenses WHERE user_id = ? ORDER BY date DESC, id DESC',
     args: [req.userId],
   })
@@ -100,11 +120,11 @@ app.post('/api/expenses', async (req, res) => {
   if (amount == null || !category || !date) {
     return res.status(400).json({ error: 'amount, category, and date are required' })
   }
-  const result = await db.execute({
+  const result = await db().execute({
     sql: 'INSERT INTO expenses (amount, category, date, note, user_id) VALUES (?, ?, ?, ?, ?)',
     args: [Number(amount), category, date, note ?? '', req.userId],
   })
-  const created = await db.execute({
+  const created = await db().execute({
     sql: 'SELECT * FROM expenses WHERE id = ?',
     args: [Number(result.lastInsertRowid)],
   })
@@ -113,7 +133,7 @@ app.post('/api/expenses', async (req, res) => {
 
 app.put('/api/expenses/:id', async (req, res) => {
   const { id } = req.params
-  const existingResult = await db.execute({
+  const existingResult = await db().execute({
     sql: 'SELECT * FROM expenses WHERE id = ? AND user_id = ?',
     args: [id, req.userId],
   })
@@ -121,7 +141,7 @@ app.put('/api/expenses/:id', async (req, res) => {
   if (!existing) return res.status(404).json({ error: 'Expense not found' })
 
   const { amount, category, date, note } = req.body
-  await db.execute({
+  await db().execute({
     sql: 'UPDATE expenses SET amount = ?, category = ?, date = ?, note = ? WHERE id = ? AND user_id = ?',
     args: [
       amount != null ? Number(amount) : existing.amount,
@@ -132,19 +152,19 @@ app.put('/api/expenses/:id', async (req, res) => {
       req.userId,
     ],
   })
-  const updated = await db.execute({ sql: 'SELECT * FROM expenses WHERE id = ?', args: [id] })
+  const updated = await db().execute({ sql: 'SELECT * FROM expenses WHERE id = ?', args: [id] })
   res.json(updated.rows[0])
 })
 
 app.delete('/api/expenses/:id', async (req, res) => {
   const { id } = req.params
-  const existingResult = await db.execute({
+  const existingResult = await db().execute({
     sql: 'SELECT * FROM expenses WHERE id = ? AND user_id = ?',
     args: [id, req.userId],
   })
   if (!existingResult.rows[0]) return res.status(404).json({ error: 'Expense not found' })
 
-  await db.execute({
+  await db().execute({
     sql: 'DELETE FROM expenses WHERE id = ? AND user_id = ?',
     args: [id, req.userId],
   })
@@ -153,6 +173,9 @@ app.delete('/api/expenses/:id', async (req, res) => {
 
 app.use((err, req, res, next) => {
   console.error(`Request failed: ${req.method} ${req.originalUrl} — ${err.stack || err.message}`)
+  if (err instanceof ConfigError) {
+    return res.status(500).json({ error: err.message })
+  }
   res.status(500).json({ error: 'Internal server error' })
 })
 
