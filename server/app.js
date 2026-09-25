@@ -1,6 +1,5 @@
 import { createClient } from '@libsql/client'
-import { initializeApp } from 'firebase-admin/app'
-import { getAuth } from 'firebase-admin/auth'
+import { createRemoteJWKSet, jwtVerify } from 'jose'
 import express from 'express'
 
 try {
@@ -9,7 +8,19 @@ try {
   // No .env file present — e.g. on Vercel, where env vars are injected directly.
 }
 
-initializeApp({ projectId: process.env.VITE_FIREBASE_PROJECT_ID })
+const projectId = process.env.VITE_FIREBASE_PROJECT_ID
+
+const firebaseJWKS = createRemoteJWKSet(
+  new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com')
+)
+
+async function verifyFirebaseIdToken(token) {
+  const { payload } = await jwtVerify(token, firebaseJWKS, {
+    issuer: `https://securetoken.google.com/${projectId}`,
+    audience: projectId,
+  })
+  return payload
+}
 
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL,
@@ -45,8 +56,8 @@ app.use('/api', async (req, res, next) => {
   }
 
   try {
-    const decoded = await getAuth().verifyIdToken(token)
-    req.userId = decoded.uid
+    const payload = await verifyFirebaseIdToken(token)
+    req.userId = payload.sub
     next()
   } catch (err) {
     console.error(`Auth rejected: ${err.message}`)
