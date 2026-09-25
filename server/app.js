@@ -1,4 +1,4 @@
-import { createClient } from '@libsql/client'
+import { createClient } from '@libsql/client/web'
 import { createRemoteJWKSet, jwtVerify } from 'jose'
 import express from 'express'
 
@@ -33,24 +33,40 @@ const db = createClient({
   authToken: process.env.TURSO_AUTH_TOKEN,
 })
 
-await db.execute(`
-  CREATE TABLE IF NOT EXISTS expenses (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    amount REAL NOT NULL,
-    category TEXT NOT NULL,
-    date TEXT NOT NULL,
-    note TEXT,
-    user_id TEXT
-  )
-`)
+async function initSchema() {
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS expenses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      amount REAL NOT NULL,
+      category TEXT NOT NULL,
+      date TEXT NOT NULL,
+      note TEXT,
+      user_id TEXT
+    )
+  `)
 
-const columns = (await db.execute('PRAGMA table_info(expenses)')).rows
-if (!columns.some((col) => col.name === 'user_id')) {
-  await db.execute('ALTER TABLE expenses ADD COLUMN user_id TEXT')
+  const columns = (await db.execute('PRAGMA table_info(expenses)')).rows
+  if (!columns.some((col) => col.name === 'user_id')) {
+    await db.execute('ALTER TABLE expenses ADD COLUMN user_id TEXT')
+  }
+}
+
+let schemaReady = null
+function ensureSchema() {
+  schemaReady ??= initSchema().catch((err) => {
+    schemaReady = null
+    throw err
+  })
+  return schemaReady
 }
 
 const app = express()
 app.use(express.json())
+
+app.use('/api', async (req, res, next) => {
+  await ensureSchema()
+  next()
+})
 
 app.use('/api', async (req, res, next) => {
   const authHeader = req.headers.authorization ?? ''
@@ -133,6 +149,11 @@ app.delete('/api/expenses/:id', async (req, res) => {
     args: [id, req.userId],
   })
   res.status(204).end()
+})
+
+app.use((err, req, res, next) => {
+  console.error(`Request failed: ${req.method} ${req.originalUrl} — ${err.stack || err.message}`)
+  res.status(500).json({ error: 'Internal server error' })
 })
 
 export default app
