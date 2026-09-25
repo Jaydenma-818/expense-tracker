@@ -8,6 +8,12 @@ try {
   // No .env file present — e.g. on Vercel, where env vars are injected directly.
 }
 
+const REQUIRED_ENV_VARS = ['TURSO_DATABASE_URL', 'TURSO_AUTH_TOKEN', 'VITE_FIREBASE_PROJECT_ID']
+const missingEnvVars = REQUIRED_ENV_VARS.filter((key) => !process.env[key])
+if (missingEnvVars.length > 0) {
+  throw new Error(`Missing required environment variable(s): ${missingEnvVars.join(', ')}`)
+}
+
 const projectId = process.env.VITE_FIREBASE_PROJECT_ID
 
 const firebaseJWKS = createRemoteJWKSet(
