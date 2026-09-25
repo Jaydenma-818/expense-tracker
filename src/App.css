@@ -1,0 +1,303 @@
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: #1f2937;
+}
+
+h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  text-align: center;
+}
+
+.status {
+  text-align: center;
+  color: #6b7280;
+}
+
+.status.error {
+  color: #dc2626;
+}
+
+.status.info {
+  color: #2563eb;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.app-header h1 {
+  text-align: left;
+  margin-bottom: 0.15rem;
+  font-size: 1.25rem;
+}
+
+.user-info {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.app-header button.secondary {
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  background: #e5e7eb;
+  color: #1f2937;
+  flex-shrink: 0;
+}
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  padding: 1.5rem;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 360px;
+  background: #fff;
+  border-radius: 14px;
+  padding: 2rem 1.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.login-card h1 {
+  font-size: 1.35rem;
+  margin-bottom: 0.25rem;
+}
+
+.login-subtitle {
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin: 0 0 1.5rem;
+}
+
+.google-btn {
+  width: 100%;
+  padding: 0.65rem;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #1f2937;
+  font-weight: 600;
+  font-size: 0.9rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.google-btn:hover {
+  background: #f9fafb;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+  color: #9ca3af;
+  font-size: 0.8rem;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.login-form input {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.login-form button[type='submit'] {
+  margin-top: 0.25rem;
+  padding: 0.65rem;
+  border: none;
+  border-radius: 8px;
+  background: #111827;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.login-form button[type='submit']:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.link-btn {
+  display: block;
+  margin: 1rem auto 0;
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  background: #111827;
+  color: #fff;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.total span {
+  font-size: 0.875rem;
+  opacity: 0.75;
+}
+
+.total strong {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.expense-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.form-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.form-actions button,
+.expense-actions button {
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+}
+
+.form-actions button[type='submit'] {
+  background: #111827;
+  color: #fff;
+}
+
+.form-actions button[type='submit']:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.form-actions .secondary {
+  background: #e5e7eb;
+  color: #1f2937;
+}
+
+.expense-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.expense-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  background: #fff;
+}
+
+.expense-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.expense-category {
+  font-weight: 600;
+}
+
+.expense-amount {
+  font-weight: 600;
+  color: #111827;
+}
+
+.expense-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.expense-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.expense-actions button {
+  background: #f3f4f6;
+  color: #1f2937;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+.expense-actions .danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
